@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>版主後台 - 匿名東工</title>
+    <!-- 引入 html2canvas 截圖套件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f4f6f9;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header-bar {
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+            background: #4c4886;
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header-bar h1 {
+            font-size: 20px;
+        }
+        .back-home {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .back-home:hover {
+            background: rgba(255,255,255,0.35);
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        /* 分類頁籤樣式 */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            flex: 1;
+            min-width: 110px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #555;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 13px;
+        }
+        .tab-btn.active {
+            background: #4c4886;
+            color: white;
+            border-color: #4c4886;
+        }
+        /* 密碼驗證遮罩層 */
+        #authOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .auth-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .auth-card h3 {
+            color: #4c4886;
+            margin-bottom: 15px;
+        }
+        .auth-card input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+        .auth-card button {
+            background: #4c4886;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        /* 貼文清單卡片 */
+        .post-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-left: 5px solid #4c4886;
+        }
+        .post-card.unpublished {
+            border-left-color: #f0ad4e;
+        }
+        .post-card.del-request {
+            border-left-color: #dc3545;
+        }
+        .post-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .post-content {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        .badge.published { background: #d4edda; color: #155724; }
+        .badge.unpublished { background: #fff3cd; color: #856404; }
+        .badge.del-request { background: #f8d7da; color: #721c24; }
+
+        .action-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 600;
+            border: none;
+        }
+        .delete-btn { background: #dc3545; color: white; }
+        .delete-btn:hover { background: #c82333; }
+        .status-btn { background: #6c757d; color: white; }
+        .status-btn:hover { background: #5a6268; }
+        .request-btn { background: #ffc107; color: #333; }
+        .request-btn:hover { background: #e0a800; }
+        .ig-btn { 
+            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); 
+            color: white; 
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ig-btn:hover { opacity: 0.9; }
+
+        /* IG 版型分享預覽彈窗樣式 */
+        #igModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .ig-modal-content-wrapper {
+            background: #181818;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        
+        /* 模擬 IG 貼文圖片的外觀 (正方形版型) */
+        #igPostCanvasBox {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #181818;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+            text-align: left;
+            position: relative;
+            box-sizing: border-box;
+        }
+        .ig-post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .ig-avatar {
+            width: 32px;
+            height: 32px;
+            background: #465a6e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .ig-username {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .ig-gray-box {
+            background: #303030;
+            border-radius: 12px;
+            flex: 1;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        .ig-message-text {
+            color: white;
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .ig-footer-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 13px;
+            color: white;
+        }
+        .ig-icon-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .ig-icon-group span.num {
+            color: #ddd;
+            font-size: 12px;
+        }
+
+        .ig-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .ig-modal-actions button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .download-img-btn { background: linear-gradient(45deg, #f09433, #dc2743, #bc1888); color: white; }
+        .close-modal-btn { background: rgba(255,255,255,0.15); color: white; }
+
+        .no-data {
+            text-align: center;
+            color: #777;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 版主後台密碼驗證遮罩 -->
+    <div id="authOverlay">
+        <div class="auth-card">
+            <h3>🛡️ 版主身分驗證</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">請輸入版主管理密碼以進入後台</p>
+            <input type="password" id="adminPassword" placeholder="請輸入密碼">
+            <button onclick="verifyAdmin()">確認登入</button>
+        </div>
+    </div>
+
+    <!-- 自訂 IG 版型預覽與下載彈窗 -->
+    <div id="igModal">
+        <div class="ig-modal-content-wrapper">
+            <!-- 實際會被截圖成圖片的區塊 -->
+            <div id="igPostCanvasBox">
+                <div class="ig-post-header">
+                    <div class="ig-avatar">TSVS</div>
+                    <div class="ig-username">tsvs._.67</div>
+                </div>
+                <div class="ig-gray-box">
+                    <div class="ig-message-text" id="igModalContent">這裡會顯示貼文內容...</div>
+                </div>
+                <div class="ig-footer-bar">
+                    <div class="ig-icon-group">
+                        <span style="color: #e2264d; font-size: 16px;">♥</span>
+                        <span class="num">6767</span>
+                    </div>
+                    <div class="ig-icon-group">
+                        <span style="font-size: 14px;">💬</span>
+                        <span class="num">67</span>
+                    </div>
+                    <div class="ig-icon-group">
+                        <span style="font-size: 14px;">🔄</span>
+                        <span class="num">6</span>
+                    </div>
+                    <div class="ig-icon-group">
+                        <span style="font-size: 14px;">✈</span>
+                        <span class="num">7</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ig-modal-actions">
+                <button class="download-img-btn" onclick="downloadIGCard()">📥 下載 IG 圖片</button>
+                <button class="close-modal-btn" onclick="closeIGModal()">關閉視窗</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-bar">
+        <h1>🛡️ 東勢高工匿名心事版 - 版主後台</h1>
+        <a href="index.html" class="back-home">⬅ 返回首頁</a>
+    </div>
+
+    <div class="container">
+        <!-- 分類頁籤 -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('all')">全部貼文</button>
+            <button class="tab-btn" onclick="switchTab('unpublished')">未發布</button>
+            <button class="tab-btn" onclick="switchTab('published')">已發布</button>
+            <button class="tab-btn" onclick="switchTab('delRequest')">申請刪文</button>
+        </div>
+
+        <div id="postContainer">
+            <div class="no-data">正在載入後台資料...</div>
+        </div>
+    </div>
+
+   <!-- 引入 Firebase 核心與 Firestore SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAz3ZK24KVPlpkdA74pu1_-nVPYYprxXsc",
+            authDomain: "tsvs-8a185.firebaseapp.com",
+            projectId: "tsvs-8a185",
+            storageBucket: "tsvs-8a185.firebasestorage.app",
+            messagingSenderId: "237011206490",
+            appId: "1:237011206490:web:d5b0ab160f2004a4853363",
+            measurementId: "G-B4W1F961X5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const ADMIN_SECRET = "Eason0413"; 
+        let currentTab = 'all';
+        let allPostsData = [];
+
+        window.verifyAdmin = function() {
+            const inputVal = document.getElementById('adminPassword').value;
+            if (inputVal === ADMIN_SECRET) {
+                document.getElementById('authOverlay').style.display = 'none';
+                loadAdminPosts();
+            } else {
+                alert('❌ 密碼錯誤！您沒有版主權限。');
+            }
+        };
+
+        window.switchTab = function(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderPosts();
+        };
+
+        async function loadAdminPosts() {
+            const container = document.getElementById('postContainer');
+            container.innerHTML = '<div class="no-data">載入中...</div>';
+
+            try {
+                const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                allPostsData = [];
+                querySnapshot.forEach((document) => {
+                    allPostsData.push({
+                        id: document.id,
+                        ...document.data()
+                    });
+                });
+
+                renderPosts();
+            } catch (error) {
+                container.innerHTML = `<div class="no-data">載入失敗：${error.message}</div>`;
+            }
+        }
+
+        function renderPosts() {
+            const container = document.getElementById('postContainer');
+            
+            let filtered = allPostsData.filter(post => {
+                const isPub = post.published === true;
+                const hasDelReq = post.deleteRequested === true;
+
+                if (currentTab === 'published') return isPub;
+                if (currentTab === 'unpublished') return !isPub;
+                if (currentTab === 'delRequest') return hasDelReq;
+                return true; 
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="no-data">目前沒有符合條件的貼文。</div>';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(post => {
+                const timeStr = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : '時間未知';
+                const isPub = post.published === true;
+                const hasDelReq = post.deleteRequested === true;
+
+                const pubBadge = isPub 
+                    ? `<span class="badge published">已發布</span>` 
+                    : `<span class="badge unpublished">未發布</span>`;
+                
+                const reqBadge = hasDelReq 
+                    ? `<span class="badge del-request">⚠ 申請刪文中</span>` 
+                    : '';
+
+                let cardClass = '';
+                if (hasDelReq) cardClass = 'del-request';
+                else if (!isPub) cardClass = 'unpublished';
+
+                // 如果有學生填寫的刪除申請資訊，特別顯示出來
+                let deleteInfoBox = '';
+                if (hasDelReq) {
+                    deleteInfoBox = `
+                        <div style="background: #fff3f3; border: 1px solid #f5c6cb; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; color: #721c24;">
+                            <strong>🗑️ 學生刪文申請資訊：</strong><br>
+                            • 申請學號/信箱：${post.deleteUserEmail || '未提供'}<br>
+                            • 刪除原因：${post.deleteReason || '無原因說明'}
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <div class="post-card ${cardClass}">
+                        <div class="post-info">
+                            <span>📌 原發文學號/信箱：<strong>${post.userEmail || '未知身分'}</strong> ${pubBadge} ${reqBadge}</span>
+                            <span>🕒 ${timeStr}</span>
+                        </div>
+                        ${deleteInfoBox}
+                        <div class="post-content">${escapeHtml(post.content)}</div>
+                        <div class="action-bar">
+                            <button class="btn status-btn" onclick="togglePublish('${post.id}', ${isPub})">
+                                ${isPub ? '🔒 設為未發布' : '🌍 設為已發布'}
+                            </button>
+                            <button class="btn request-btn" onclick="toggleDeleteRequest('${post.id}', ${hasDelReq})">
+                                ${hasDelReq ? '❌ 取消刪文申請' : '⚠️ 標記申請刪文'}
+                            </button>
+                            <button class="btn delete-btn" onclick="deletePost('${post.id}')">🗑 刪除</button>
+                            <button class="btn ig-btn" onclick="openIGModal(this)" data-content="${escapeHtml(post.content)}">📸 分享到 IG</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // 開啟 IG 版型預覽彈窗
+        window.openIGModal = function(btn) {
+            const content = btn.getAttribute('data-content');
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = content;
+            
+            document.getElementById('igModalContent').innerText = textarea.value;
+            document.getElementById('igModal').style.display = 'flex';
+        };
+
+        window.closeIGModal = function() {
+            document.getElementById('igModal').style.display = 'none';
+        };
+
+        window.downloadIGCard = function() {
+            const targetElement = document.getElementById('igPostCanvasBox');
+            
+            html2canvas(targetElement, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: "#181818"
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'tsvs_ig_post.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                alert('圖片產生失敗，請稍後再試。');
+                console.error(err);
+            });
+        };
+
+        window.togglePublish = async function(postId, currentStatus) {
+            try {
+                await updateDoc(doc(db, "posts", postId), {
+                    published: !currentStatus
+                });
+                const post = allPostsData.find(p => p.id === postId);
+                if (post) post.published = !currentStatus;
+                renderPosts();
+            } catch (error) {
+                alert('狀態更新失敗：' + error.message);
+            }
+        };
+
+        window.toggleDeleteRequest = async function(postId, currentReq) {
+            try {
+                await updateDoc(doc(db, "posts", postId), {
+                    deleteRequested: !currentReq,
+                    deleteReason: currentReq ? null : '版主手動標記',
+                    deleteUserEmail: currentReq ? null : '版主後台'
+                });
+                const post = allPostsData.find(p => p.id === postId);
+                if (post) {
+                    post.deleteRequested = !currentReq;
+                    if (!currentReq) {
+                        post.deleteReason = '版主手動標記';
+                        post.deleteUserEmail = '版主後台';
+                    } else {
+                        post.deleteReason = null;
+                        post.deleteUserEmail = null;
+                    }
+                }
+                renderPosts();
+            } catch (error) {
+                alert('更新失敗：' + error.message);
+            }
+        };
+
+        window.deletePost = async function(postId) {
+            if (confirm('確定要永久刪除這則貼文嗎？')) {
+                try {
+                    await deleteDoc(doc(db, "posts", postId));
+                    allPostsData = allPostsData.filter(p => p.id !== postId);
+                    renderPosts();
+                    alert('已成功刪除該貼文！');
+                } catch (error) {
+                    alert('刪除失敗：' + error.message);
+                }
+            }
+        };
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

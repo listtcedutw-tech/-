@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>東勢高工匿名心事版</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #7b78aa 0%, #4c4886 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+        /* 右上角登入/使用者狀態 */
+        .top-user-area {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .top-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .top-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+        .container {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        /* 頂部 Logo 區塊 */
+        .logo-container {
+            width: 100px;
+            height: 100px;
+            background: #ffffff;
+            border-radius: 50%;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        .logo-container img {
+            width: 80%;
+            height: auto;
+            object-fit: contain;
+        }
+        /* 標題與簡介 */
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        p.subtitle {
+            font-size: 14px;
+            opacity: 0.85;
+            margin-bottom: 25px;
+        }
+        /* 規範提示膠囊按鈕 */
+        .badge-notice {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-bottom: 25px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .badge-notice:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        /* 功能按鈕列表 */
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .menu-item {
+            background: #ffffff;
+            color: #333333;
+            padding: 16px 20px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: transform 0.1s, background 0.2s;
+            cursor: pointer;
+        }
+        .menu-item:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+        .menu-item .left-icon {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .menu-item .arrow {
+            color: #888;
+            font-size: 14px;
+        }
+        .menu-item.primary {
+            background: #ffffff;
+            color: #4c4886;
+        }
+        /* 底部版權 */
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 右上角登入狀態顯示 -->
+    <div class="top-user-area" id="userArea">
+        <a href="login.html" class="top-btn" id="loginBtn">👤 登入 / 註冊</a>
+    </div>
+
+    <div class="container">
+        <!-- 頭貼 -->
+        <div class="logo-container">
+            <img src="tsvs_logo.png" alt="TSVS Logo">
+        </div>
+
+        <!-- 標題 -->
+        <h1>匿名東工</h1>
+        <p class="subtitle">歡迎各位踴躍發言</p>
+
+        <!-- 規範提示 -->
+        <div class="badge-notice" onclick="alert('請詳細閱讀板規：禁止人身攻擊、不實謠言，違者保留法律追訴權。')">
+            ⓘ 請詳細閱讀板規後再行投稿
+        </div>
+
+        <!-- 功能選單按鈕區 -->
+        <div class="menu-list">
+            <!-- 點擊「發送匿名」時，觸發檢查登入的函式 -->
+            <div class="menu-item primary" onclick="checkLoginAndPost()">
+                <span class="left-icon">✉ 發送匿名</span>
+                <span class="arrow">➔</span>
+            </div>
+            
+            <a href="rules.html" class="menu-item">
+                <span class="left-icon">📖 匿名規範</span>
+                <span class="arrow">↗</span>
+            </a>
+
+            <a href="admin.html" class="menu-item admin">
+                <span class="left-icon">🛡️ 版主後台</span>
+                <span class="arrow">↗</span>
+            </a>
+
+            <a href="delete.html" class="menu-item">
+                <span class="icon-text">🗑️ 刪文申請</span>
+                <span class="arrow">→</span>
+            </a>
+        </div>
+
+        <div class="footer">
+            東勢高工匿名社群 &bull; 獨立運作
+        </div>
+    </div>
+
+    <script>
+        // 頁面載入時檢查是否已登入 (目前用 localStorage 模擬)
+        window.onload = function() {
+            const user = localStorage.getItem('google_user');
+            const userArea = document.getElementById('userArea');
+            
+            if (user) {
+                // 如果已登入，右上角顯示歡迎詞與登出按鈕
+                userArea.innerHTML = `
+                    <span style="font-size: 13px;">Hi, ${user}</span>
+                    <button class="top-btn" onclick="logout()">登出</button>
+                `;
+            }
+        };
+
+        // 點擊發送匿名時的檢查邏輯
+        function checkLoginAndPost() {
+            const user = localStorage.getItem('google_user');
+            if (user) {
+                // 已經登入，直接跳轉到表單頁面
+                window.location.href = 'form.html';
+            } else {
+                // 未登入，彈出提示並引導去登入頁面
+                alert('為了維護社群秩序，發言前請先使用學校 Google 帳號登入！');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // 登出函式
+        function logout() {
+            localStorage.removeItem('google_user');
+            alert('已成功登出');
+            location.reload();
+        }
+    </script>
+
+</body>
+</html>
