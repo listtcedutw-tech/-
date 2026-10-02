@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>版主後台 - 匿名東工</title>
-    <!-- 引入 html2canvas 截圖套件 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <title>管理員後台 - 東勢高工匿名心事版</title>
     <style>
         * {
             box-sizing: border-box;
@@ -14,131 +12,133 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f4f6f9;
-            color: #333;
+            background: linear-gradient(135deg, #7b78aa 0%, #4c4886 100%);
+            color: #ffffff;
             min-height: 100vh;
             padding: 20px;
         }
         .header-bar {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto 20px auto;
-            background: #4c4886;
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         .header-bar h1 {
-            font-size: 20px;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
         .back-home {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 8px 14px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
+            backdrop-filter: blur(5px);
+            transition: background 0.2s;
         }
         .back-home:hover {
-            background: rgba(255,255,255,0.35);
+            background: rgba(255, 255, 255, 0.35);
         }
         .container {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
         }
-        /* 分類頁籤樣式 */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .tab-btn {
-            flex: 1;
-            min-width: 110px;
-            padding: 10px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            color: #555;
-            transition: all 0.2s;
-            text-align: center;
-            font-size: 13px;
-        }
-        .tab-btn.active {
-            background: #4c4886;
-            color: white;
-            border-color: #4c4886;
-        }
-        /* 密碼驗證遮罩層 */
-        #authOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-        }
-        .auth-card {
-            background: white;
+        /* 管理員登入保護區塊 */
+        .login-box {
+            background: #ffffff;
+            color: #333;
             padding: 30px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 380px;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             text-align: center;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            max-width: 400px;
+            margin: 80px auto;
         }
-        .auth-card h3 {
-            color: #4c4886;
+        .login-box h2 {
             margin-bottom: 15px;
+            font-size: 20px;
+            color: #4c4886;
         }
-        .auth-card input {
+        .login-box input {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 15px;
+            font-size: 14px;
         }
-        .auth-card button {
+        .login-box button {
+            width: 100%;
             background: #4c4886;
             color: white;
             border: none;
-            width: 100%;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
+            transition: background 0.2s;
         }
-        /* 貼文清單卡片 */
+        .login-box button:hover {
+            background: #3b386b;
+        }
+
+        /* 後台主介面 */
+        .admin-content {
+            display: none; /* 預設隱藏，通過密碼後顯示 */
+        }
+
+        /* 狀態大分類篩選導覽列 */
+        .status-filter-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            scrollbar-width: none;
+        }
+        .status-filter-bar::-webkit-scrollbar {
+            display: none;
+        }
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            backdrop-filter: blur(5px);
+        }
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+        .filter-btn.active {
+            background: #ffffff;
+            color: #4c4886;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* 貼文卡片 */
         .post-card {
-            background: white;
+            background: #ffffff;
+            color: #333333;
             padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
             border-left: 5px solid #4c4886;
-        }
-        .post-card.unpublished {
-            border-left-color: #f0ad4e;
-        }
-        .post-card.del-request {
-            border-left-color: #dc3545;
         }
         .post-info {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             font-size: 12px;
             color: #666;
             margin-bottom: 10px;
@@ -151,247 +151,102 @@
         .post-content {
             font-size: 15px;
             line-height: 1.6;
-            margin-bottom: 15px;
             white-space: pre-wrap;
             word-break: break-all;
+            margin-bottom: 15px;
         }
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            margin-left: 5px;
-        }
-        .badge.published { background: #d4edda; color: #155724; }
-        .badge.unpublished { background: #fff3cd; color: #856404; }
-        .badge.del-request { background: #f8d7da; color: #721c24; }
-
-        .action-bar {
+        /* 管理動作按鈕群 */
+        .action-buttons {
             display: flex;
-            gap: 8px;
+            gap: 10px;
+            justify-content: flex-end;
             flex-wrap: wrap;
         }
         .btn {
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
             font-size: 13px;
-            cursor: pointer;
             font-weight: 600;
             border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
         }
-        .delete-btn { background: #dc3545; color: white; }
-        .delete-btn:hover { background: #c82333; }
-        .status-btn { background: #6c757d; color: white; }
-        .status-btn:hover { background: #5a6268; }
-        .request-btn { background: #ffc107; color: #333; }
-        .request-btn:hover { background: #e0a800; }
-        .ig-btn { 
-            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); 
-            color: white; 
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+        .btn:hover {
+            opacity: 0.85;
         }
-        .ig-btn:hover { opacity: 0.9; }
+        .btn-pending { background: #ffc107; color: #333; }
+        .btn-publish { background: #28a745; color: white; }
+        .btn-reject { background: #dc3545; color: white; }
 
-        /* IG 版型分享預覽彈窗樣式 */
-        #igModal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-        .ig-modal-content-wrapper {
-            background: #181818;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 420px;
-            padding: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            text-align: center;
-        }
-        
-        /* 模擬 IG 貼文圖片的外觀 (正方形版型) */
-        #igPostCanvasBox {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            background: #181818;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 15px;
-            text-align: left;
-            position: relative;
-            box-sizing: border-box;
-        }
-        .ig-post-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .ig-avatar {
-            width: 32px;
-            height: 32px;
-            background: #465a6e;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 10px;
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
             font-weight: bold;
         }
-        .ig-username {
-            color: white;
-            font-size: 14px;
+        .badge.published { background: #d4edda; color: #155724; }
+        .badge.unpublished { background: #fff3cd; color: #856404; }
+        .badge.rejected { background: #f8d7da; color: #721c24; }
+        
+        /* 內容話題分類標籤 */
+        .category-badge {
+            background: #e2e8f0;
+            color: #4c4886;
+            padding: 2px 8px;
+            border-radius: 4px;
             font-weight: 600;
+            font-size: 11px;
+            margin-right: 6px;
         }
-        .ig-gray-box {
-            background: #303030;
-            border-radius: 12px;
-            flex: 1;
-            margin: 10px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            text-align: center;
-        }
-        .ig-message-text {
-            color: white;
-            font-size: 16px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        .ig-footer-bar {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-size: 13px;
-            color: white;
-        }
-        .ig-icon-group {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .ig-icon-group span.num {
-            color: #ddd;
-            font-size: 12px;
-        }
-
-        .ig-modal-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .ig-modal-actions button {
-            flex: 1;
-            padding: 10px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .download-img-btn { background: linear-gradient(45deg, #f09433, #dc2743, #bc1888); color: white; }
-        .close-modal-btn { background: rgba(255,255,255,0.15); color: white; }
 
         .no-data {
             text-align: center;
-            color: #777;
+            color: #ffffff;
+            opacity: 0.8;
             padding: 40px;
-            background: white;
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            backdrop-filter: blur(5px);
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
 
-    <!-- 版主後台密碼驗證遮罩 -->
-    <div id="authOverlay">
-        <div class="auth-card">
-            <h3>🛡️ 版主身分驗證</h3>
-            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">請輸入版主管理密碼以進入後台</p>
-            <input type="password" id="adminPassword" placeholder="請輸入密碼">
-            <button onclick="verifyAdmin()">確認登入</button>
-        </div>
+    <!-- 簡易密碼登入區塊 -->
+    <div class="login-box" id="loginBox">
+        <h2>🛡️ 版主後台驗證</h2>
+        <input type="password" id="adminPassword" placeholder="請輸入版主後台密碼">
+        <button onclick="verifyAdmin()">進入後台</button>
     </div>
 
-    <!-- 自訂 IG 版型預覽與下載彈窗 -->
-    <div id="igModal">
-        <div class="ig-modal-content-wrapper">
-            <!-- 實際會被截圖成圖片的區塊 -->
-            <div id="igPostCanvasBox">
-                <div class="ig-post-header">
-                    <div class="ig-avatar">TSVS</div>
-                    <div class="ig-username">tsvs._.67</div>
-                </div>
-                <div class="ig-gray-box">
-                    <div class="ig-message-text" id="igModalContent">這裡會顯示貼文內容...</div>
-                </div>
-                <div class="ig-footer-bar">
-                    <div class="ig-icon-group">
-                        <span style="color: #e2264d; font-size: 16px;">♥</span>
-                        <span class="num">6767</span>
-                    </div>
-                    <div class="ig-icon-group">
-                        <span style="font-size: 14px;">💬</span>
-                        <span class="num">67</span>
-                    </div>
-                    <div class="ig-icon-group">
-                        <span style="font-size: 14px;">🔄</span>
-                        <span class="num">6</span>
-                    </div>
-                    <div class="ig-icon-group">
-                        <span style="font-size: 14px;">✈</span>
-                        <span class="num">7</span>
-                    </div>
-                </div>
+    <!-- 後台主介面 -->
+    <div class="admin-content" id="adminContent">
+        <div class="header-bar">
+            <h1>🛡️ 版主審核管理後台</h1>
+            <a href="index.html" class="back-home">⬅ 返回首頁</a>
+        </div>
+
+        <div class="container">
+            <!-- 狀態大分類切換篩選列 -->
+            <div class="status-filter-bar">
+                <button class="filter-btn active" onclick="filterStatus('all', this)">全部貼文</button>
+                <button class="filter-btn" onclick="filterStatus('pending', this)">⏳ 審核中</button>
+                <button class="filter-btn" onclick="filterStatus('published', this)">🌍 已發布</button>
+                <button class="filter-btn" onclick="filterStatus('rejected', this)">🚫 已下架</button>
             </div>
 
-            <div class="ig-modal-actions">
-                <button class="download-img-btn" onclick="downloadIGCard()">📥 下載 IG 圖片</button>
-                <button class="close-modal-btn" onclick="closeIGModal()">關閉視窗</button>
+            <div id="adminPostsContainer">
+                <div class="no-data">正在載入貼文資料...</div>
             </div>
         </div>
     </div>
 
-    <div class="header-bar">
-        <h1>🛡️ 東勢高工匿名心事版 - 版主後台</h1>
-        <a href="index.html" class="back-home">⬅ 返回首頁</a>
-    </div>
-
-    <div class="container">
-        <!-- 分類頁籤 -->
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('all')">全部貼文</button>
-            <button class="tab-btn" onclick="switchTab('unpublished')">未發布</button>
-            <button class="tab-btn" onclick="switchTab('published')">已發布</button>
-            <button class="tab-btn" onclick="switchTab('delRequest')">申請刪文</button>
-        </div>
-
-        <div id="postContainer">
-            <div class="no-data">正在載入後台資料...</div>
-        </div>
-    </div>
-
-   <!-- 引入 Firebase 核心與 Firestore SDK -->
+    <!-- Firebase SDK 引入與邏輯 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAz3ZK24KVPlpkdA74pu1_-nVPYYprxXsc",
@@ -406,40 +261,43 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const ADMIN_SECRET = "Eason0413"; 
-        let currentTab = 'all';
-        let allPostsData = [];
+        let allPostsData = []; // 儲存所有載入的貼文供前端篩選
+        let currentStatusFilter = 'all'; // 預設顯示全部
 
+        // 驗證版主密碼
         window.verifyAdmin = function() {
-            const inputVal = document.getElementById('adminPassword').value;
-            if (inputVal === ADMIN_SECRET) {
-                document.getElementById('authOverlay').style.display = 'none';
-                loadAdminPosts();
+            const pwd = document.getElementById('adminPassword').value;
+            if (pwd === "Eason0413") {
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+                loadAllPostsForAdmin();
             } else {
-                alert('❌ 密碼錯誤！您沒有版主權限。');
+                alert('密碼錯誤！');
             }
         };
 
-        window.switchTab = function(tab) {
-            currentTab = tab;
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            renderPosts();
-        };
-
-        async function loadAdminPosts() {
-            const container = document.getElementById('postContainer');
-            container.innerHTML = '<div class="no-data">載入中...</div>';
-
+        // 載入所有貼文
+        async function loadAllPostsForAdmin() {
+            const container = document.getElementById('adminPostsContainer');
             try {
                 const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
 
                 allPostsData = [];
                 querySnapshot.forEach((document) => {
+                    const postData = document.data();
+                    // 標準化狀態值
+                    let status = postData.status;
+                    if (!status) {
+                        if (postData.deleteRequested || postData.status === 'rejected') status = 'rejected';
+                        else if (postData.published) status = 'published';
+                        else status = 'pending';
+                    }
+
                     allPostsData.push({
                         id: document.id,
-                        ...document.data()
+                        ...postData,
+                        normalizedStatus: status
                     });
                 });
 
@@ -449,157 +307,109 @@
             }
         }
 
-        function renderPosts() {
-            const container = document.getElementById('postContainer');
+        // 切換狀態篩選
+        window.filterStatus = function(statusType, btnElement) {
+            currentStatusFilter = statusType;
             
-            let filtered = allPostsData.filter(post => {
-                const isPub = post.published === true;
-                const hasDelReq = post.deleteRequested === true;
+            // 更新按鈕樣式
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
 
-                if (currentTab === 'published') return isPub;
-                if (currentTab === 'unpublished') return !isPub;
-                if (currentTab === 'delRequest') return hasDelReq;
-                return true; 
-            });
+            renderPosts();
+        }
 
-            if (filtered.length === 0) {
-                container.innerHTML = '<div class="no-data">目前沒有符合條件的貼文。</div>';
+        // 根據當前狀態篩選渲染貼文
+        function renderPosts() {
+            const container = document.getElementById('adminPostsContainer');
+            
+            let filteredPosts = allPostsData;
+            if (currentStatusFilter !== 'all') {
+                filteredPosts = allPostsData.filter(post => post.normalizedStatus === currentStatusFilter);
+            }
+
+            if (filteredPosts.length === 0) {
+                let statusName = '此狀態';
+                if (currentStatusFilter === 'pending') statusName = '「審核中」';
+                if (currentStatusFilter === 'published') statusName = '「已發布」';
+                if (currentStatusFilter === 'rejected') statusName = '「已下架」';
+                container.innerHTML = `<div class="no-data">目前沒有${statusName}的貼文。</div>`;
                 return;
             }
 
             let html = '';
-            filtered.forEach(post => {
+            filteredPosts.forEach((post) => {
+                const postId = post.id;
                 const timeStr = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : '時間未知';
-                const isPub = post.published === true;
-                const hasDelReq = post.deleteRequested === true;
+                const status = post.normalizedStatus;
+                const userEmail = post.userEmail || post.deleteUserEmail || '未知發文者';
+                const category = post.category || '未分類';
 
-                const pubBadge = isPub 
-                    ? `<span class="badge published">已發布</span>` 
-                    : `<span class="badge unpublished">未發布</span>`;
-                
-                const reqBadge = hasDelReq 
-                    ? `<span class="badge del-request">⚠ 申請刪文中</span>` 
-                    : '';
-
-                let cardClass = '';
-                if (hasDelReq) cardClass = 'del-request';
-                else if (!isPub) cardClass = 'unpublished';
-
-                // 如果有學生填寫的刪除申請資訊，特別顯示出來
-                let deleteInfoBox = '';
-                if (hasDelReq) {
-                    deleteInfoBox = `
-                        <div style="background: #fff3f3; border: 1px solid #f5c6cb; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; color: #721c24;">
-                            <strong>🗑️ 學生刪文申請資訊：</strong><br>
-                            • 申請學號/信箱：${post.deleteUserEmail || '未提供'}<br>
-                            • 刪除原因：${post.deleteReason || '無原因說明'}
-                        </div>
-                    `;
+                let badgeHtml = '';
+                if (status === 'rejected') {
+                    badgeHtml = `<span class="badge rejected">🚫 已下架</span>`;
+                } else if (status === 'published') {
+                    badgeHtml = `<span class="badge published">🌍 已發布</span>`;
+                } else {
+                    badgeHtml = `<span class="badge unpublished">⏳ 審核中</span>`;
                 }
 
                 html += `
-                    <div class="post-card ${cardClass}">
+                    <div class="post-card" id="card-${postId}">
                         <div class="post-info">
-                            <span>📌 原發文學號/信箱：<strong>${post.userEmail || '未知身分'}</strong> ${pubBadge} ${reqBadge}</span>
-                            <span>🕒 ${timeStr}</span>
+                            <div>
+                                <span class="category-badge">📌 ${escapeHtml(category)}</span>
+                                <span>📧 ${escapeHtml(userEmail)}</span>
+                            </div>
+                            <div>
+                                <span style="margin-right: 8px;">🕒 ${timeStr}</span>
+                                ${badgeHtml}
+                            </div>
                         </div>
-                        ${deleteInfoBox}
                         <div class="post-content">${escapeHtml(post.content)}</div>
-                        <div class="action-bar">
-                            <button class="btn status-btn" onclick="togglePublish('${post.id}', ${isPub})">
-                                ${isPub ? '🔒 設為未發布' : '🌍 設為已發布'}
-                            </button>
-                            <button class="btn request-btn" onclick="toggleDeleteRequest('${post.id}', ${hasDelReq})">
-                                ${hasDelReq ? '❌ 取消刪文申請' : '⚠️ 標記申請刪文'}
-                            </button>
-                            <button class="btn delete-btn" onclick="deletePost('${post.id}')">🗑 刪除</button>
-                            <button class="btn ig-btn" onclick="openIGModal(this)" data-content="${escapeHtml(post.content)}">📸 分享到 IG</button>
+                        <div class="action-buttons">
+                            <button class="btn btn-pending" onclick="updatePostStatus('${postId}', 'pending')">設為審核中</button>
+                            <button class="btn btn-publish" onclick="updatePostStatus('${postId}', 'published')">發布</button>
+                            <button class="btn btn-reject" onclick="updatePostStatus('${postId}', 'rejected')">標記已下架</button>
                         </div>
                     </div>
                 `;
             });
+
             container.innerHTML = html;
         }
 
-        // 開啟 IG 版型預覽彈窗
-        window.openIGModal = function(btn) {
-            const content = btn.getAttribute('data-content');
-            const textarea = document.createElement('textarea');
-            textarea.innerHTML = content;
-            
-            document.getElementById('igModalContent').innerText = textarea.value;
-            document.getElementById('igModal').style.display = 'flex';
-        };
-
-        window.closeIGModal = function() {
-            document.getElementById('igModal').style.display = 'none';
-        };
-
-        window.downloadIGCard = function() {
-            const targetElement = document.getElementById('igPostCanvasBox');
-            
-            html2canvas(targetElement, {
-                scale: 3,
-                useCORS: true,
-                backgroundColor: "#181818"
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'tsvs_ig_post.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            }).catch(err => {
-                alert('圖片產生失敗，請稍後再試。');
-                console.error(err);
-            });
-        };
-
-        window.togglePublish = async function(postId, currentStatus) {
+        // 更新貼文狀態至 Firebase
+        window.updatePostStatus = async function(postId, newStatus) {
             try {
-                await updateDoc(doc(db, "posts", postId), {
-                    published: !currentStatus
-                });
-                const post = allPostsData.find(p => p.id === postId);
-                if (post) post.published = !currentStatus;
-                renderPosts();
-            } catch (error) {
-                alert('狀態更新失敗：' + error.message);
-            }
-        };
+                const postRef = doc(db, "posts", postId);
+                let updateData = { status: newStatus };
+                
+                // 同步相容舊版屬性
+                if (newStatus === 'published') {
+                    updateData.published = true;
+                    updateData.deleteRequested = false;
+                } else if (newStatus === 'rejected') {
+                    updateData.published = false;
+                    updateData.deleteRequested = true;
+                } else {
+                    updateData.published = false;
+                    updateData.deleteRequested = false;
+                }
 
-        window.toggleDeleteRequest = async function(postId, currentReq) {
-            try {
-                await updateDoc(doc(db, "posts", postId), {
-                    deleteRequested: !currentReq,
-                    deleteReason: currentReq ? null : '版主手動標記',
-                    deleteUserEmail: currentReq ? null : '版主後台'
-                });
-                const post = allPostsData.find(p => p.id === postId);
-                if (post) {
-                    post.deleteRequested = !currentReq;
-                    if (!currentReq) {
-                        post.deleteReason = '版主手動標記';
-                        post.deleteUserEmail = '版主後台';
-                    } else {
-                        post.deleteReason = null;
-                        post.deleteUserEmail = null;
-                    }
+                await updateDoc(postRef, updateData);
+                alert(`已成功將狀態更新為：${newStatus === 'published' ? '已發布' : newStatus === 'rejected' ? '已下架' : '審核中'}`);
+                
+                // 本地資料同步更新後重新渲染
+                const target = allPostsData.find(p => p.id === postId);
+                if (target) {
+                    target.status = newStatus;
+                    target.normalizedStatus = newStatus;
+                    target.published = updateData.published;
+                    target.deleteRequested = updateData.deleteRequested;
                 }
                 renderPosts();
             } catch (error) {
-                alert('更新失敗：' + error.message);
-            }
-        };
-
-        window.deletePost = async function(postId) {
-            if (confirm('確定要永久刪除這則貼文嗎？')) {
-                try {
-                    await deleteDoc(doc(db, "posts", postId));
-                    allPostsData = allPostsData.filter(p => p.id !== postId);
-                    renderPosts();
-                    alert('已成功刪除該貼文！');
-                } catch (error) {
-                    alert('刪除失敗：' + error.message);
-                }
+                alert('更新狀態失敗：' + error.message);
             }
         };
 
