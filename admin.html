@@ -88,7 +88,7 @@
 
         /* 後台主介面 */
         .admin-content {
-            display: none; /* 預設隱藏，通過密碼後顯示 */
+            display: none;
         }
 
         /* 狀態大分類篩選導覽列 */
@@ -135,6 +135,10 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
             border-left: 5px solid #4c4886;
         }
+        .post-card.has-delete-request {
+            border-left: 5px solid #dc3545;
+            background: #fff8f8;
+        }
         .post-info {
             display: flex;
             justify-content: space-between;
@@ -155,7 +159,6 @@
             word-break: break-all;
             margin-bottom: 15px;
         }
-        /* 管理動作按鈕群 */
         .action-buttons {
             display: flex;
             gap: 10px;
@@ -188,8 +191,8 @@
         .badge.published { background: #d4edda; color: #155724; }
         .badge.unpublished { background: #fff3cd; color: #856404; }
         .badge.rejected { background: #f8d7da; color: #721c24; }
+        .badge.delete-req { background: #f5c6cb; color: #721c24; border: 1px dashed #dc3545; }
         
-        /* 內容話題分類標籤 */
         .category-badge {
             background: #e2e8f0;
             color: #4c4886;
@@ -214,14 +217,12 @@
 </head>
 <body>
 
-    <!-- 簡易密碼登入區塊 -->
     <div class="login-box" id="loginBox">
         <h2>🛡️ 版主後台驗證</h2>
         <input type="password" id="adminPassword" placeholder="請輸入版主後台密碼">
         <button onclick="verifyAdmin()">進入後台</button>
     </div>
 
-    <!-- 後台主介面 -->
     <div class="admin-content" id="adminContent">
         <div class="header-bar">
             <h1>🛡️ 版主審核管理後台</h1>
@@ -229,12 +230,12 @@
         </div>
 
         <div class="container">
-            <!-- 狀態大分類切換篩選列 -->
             <div class="status-filter-bar">
                 <button class="filter-btn active" onclick="filterStatus('all', this)">全部貼文</button>
                 <button class="filter-btn" onclick="filterStatus('pending', this)">⏳ 審核中</button>
                 <button class="filter-btn" onclick="filterStatus('published', this)">🌍 已發布</button>
                 <button class="filter-btn" onclick="filterStatus('rejected', this)">🚫 已下架</button>
+                <button class="filter-btn" onclick="filterStatus('delete_requested', this)" style="background: rgba(220, 53, 69, 0.4);">🗑️ 刪除申請</button>
             </div>
 
             <div id="adminPostsContainer">
@@ -243,7 +244,6 @@
         </div>
     </div>
 
-    <!-- Firebase SDK 引入與邏輯 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
@@ -261,10 +261,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let allPostsData = []; // 儲存所有載入的貼文供前端篩選
-        let currentStatusFilter = 'all'; // 預設顯示全部
+        let allPostsData = [];
+        let currentStatusFilter = 'all';
 
-        // 驗證版主密碼
         window.verifyAdmin = function() {
             const pwd = document.getElementById('adminPassword').value;
             if (pwd === "Eason0413") {
@@ -276,7 +275,6 @@
             }
         };
 
-        // 載入所有貼文
         async function loadAllPostsForAdmin() {
             const container = document.getElementById('adminPostsContainer');
             try {
@@ -286,10 +284,19 @@
                 allPostsData = [];
                 querySnapshot.forEach((document) => {
                     const postData = document.data();
-                    // 標準化狀態值
+                    
+                    // 🔍 [除錯用] 在 F12 主控台印出每篇貼文的完整資料結構，幫你檢查欄位
+                    console.log(`貼文 ID: ${document.id}`, postData);
+
+                    // 寬鬆判定：只要以下任何一個屬性為 true 或符合刪除申請，就視為刪除申請
+                    let hasDeleteReq = postData.deleteRequested === true || 
+                                       postData.status === 'delete_requested' || 
+                                       postData.isDeleteRequested === true ||
+                                       postData.requestDelete === true;
+
                     let status = postData.status;
                     if (!status) {
-                        if (postData.deleteRequested || postData.status === 'rejected') status = 'rejected';
+                        if (hasDeleteReq) status = 'rejected';
                         else if (postData.published) status = 'published';
                         else status = 'pending';
                     }
@@ -297,7 +304,8 @@
                     allPostsData.push({
                         id: document.id,
                         ...postData,
-                        normalizedStatus: status
+                        normalizedStatus: status,
+                        deleteRequested: hasDeleteReq
                     });
                 });
 
@@ -307,23 +315,20 @@
             }
         }
 
-        // 切換狀態篩選
         window.filterStatus = function(statusType, btnElement) {
             currentStatusFilter = statusType;
-            
-            // 更新按鈕樣式
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             btnElement.classList.add('active');
-
             renderPosts();
         }
 
-        // 根據當前狀態篩選渲染貼文
         function renderPosts() {
             const container = document.getElementById('adminPostsContainer');
             
             let filteredPosts = allPostsData;
-            if (currentStatusFilter !== 'all') {
+            if (currentStatusFilter === 'delete_requested') {
+                filteredPosts = allPostsData.filter(post => post.deleteRequested === true);
+            } else if (currentStatusFilter !== 'all') {
                 filteredPosts = allPostsData.filter(post => post.normalizedStatus === currentStatusFilter);
             }
 
@@ -332,6 +337,7 @@
                 if (currentStatusFilter === 'pending') statusName = '「審核中」';
                 if (currentStatusFilter === 'published') statusName = '「已發布」';
                 if (currentStatusFilter === 'rejected') statusName = '「已下架」';
+                if (currentStatusFilter === 'delete_requested') statusName = '「刪除申請」';
                 container.innerHTML = `<div class="no-data">目前沒有${statusName}的貼文。</div>`;
                 return;
             }
@@ -343,9 +349,12 @@
                 const status = post.normalizedStatus;
                 const userEmail = post.userEmail || post.deleteUserEmail || '未知發文者';
                 const category = post.category || '未分類';
+                const isDeleteReq = post.deleteRequested;
 
                 let badgeHtml = '';
-                if (status === 'rejected') {
+                if (isDeleteReq) {
+                    badgeHtml = `<span class="badge delete-req">⚠️ 申請刪除中</span>`;
+                } else if (status === 'rejected') {
                     badgeHtml = `<span class="badge rejected">🚫 已下架</span>`;
                 } else if (status === 'published') {
                     badgeHtml = `<span class="badge published">🌍 已發布</span>`;
@@ -353,8 +362,10 @@
                     badgeHtml = `<span class="badge unpublished">⏳ 審核中</span>`;
                 }
 
+                const cardClass = isDeleteReq ? 'post-card has-delete-request' : 'post-card';
+
                 html += `
-                    <div class="post-card" id="card-${postId}">
+                    <div class="${cardClass}" id="card-${postId}">
                         <div class="post-info">
                             <div>
                                 <span class="category-badge">📌 ${escapeHtml(category)}</span>
@@ -378,13 +389,11 @@
             container.innerHTML = html;
         }
 
-        // 更新貼文狀態至 Firebase
         window.updatePostStatus = async function(postId, newStatus) {
             try {
                 const postRef = doc(db, "posts", postId);
                 let updateData = { status: newStatus };
                 
-                // 同步相容舊版屬性
                 if (newStatus === 'published') {
                     updateData.published = true;
                     updateData.deleteRequested = false;
@@ -399,7 +408,6 @@
                 await updateDoc(postRef, updateData);
                 alert(`已成功將狀態更新為：${newStatus === 'published' ? '已發布' : newStatus === 'rejected' ? '已下架' : '審核中'}`);
                 
-                // 本地資料同步更新後重新渲染
                 const target = allPostsData.find(p => p.id === postId);
                 if (target) {
                     target.status = newStatus;
