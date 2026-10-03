@@ -20,7 +20,6 @@
             flex-direction: column;
             align-items: center;
         }
-        /* 頂部導覽列 */
         .header-bar {
             width: 100%;
             max-width: 500px;
@@ -45,14 +44,10 @@
         .back-home:hover {
             background: rgba(255,255,255,0.35);
         }
-
-        /* 內容容器 */
         .container {
             width: 100%;
             max-width: 500px;
         }
-
-        /* 表單卡片 */
         .form-card {
             background: white;
             color: #333;
@@ -130,7 +125,7 @@
 
             <div class="form-group">
                 <label for="postLink">貼文連結 / 內容識別：</label>
-                <input type="text" id="postLink" placeholder="請貼上該則貼文的網址或關鍵字內容">
+                <input type="text" id="postLink" placeholder="請輸入該則貼文的關鍵字或內容...">
             </div>
 
             <div class="form-group">
@@ -147,11 +142,10 @@
         </div>
     </div>
 
-
     <!-- 引入 Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-        import { getFirestore, collection, doc, updateDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAz3ZK24KVPlpkdA74pu1_-nVPYYprxXsc",
@@ -166,56 +160,53 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 提交刪文申請表單至 Firebase
         window.submitDeleteRequestForm = async function() {
-            const linkVal = document.getElementById('postLink').value.trim();
+            const keyword = document.getElementById('postLink').value.trim();
             const reasonVal = document.getElementById('deleteReason').value.trim();
             const idVal = document.getElementById('studentId').value.trim();
 
-            if (!linkVal || !reasonVal || !idVal) {
-                alert('請完整填寫所有欄位（貼文連結、刪除原因、學號/信箱）！');
+            if (!keyword || !reasonVal || !idVal) {
+                alert('請完整填寫所有欄位！');
                 return;
             }
 
             try {
-                // 嘗試用貼文 ID 或內容來尋找對應的貼文並更新狀態
                 const postsRef = collection(db, "posts");
                 const querySnapshot = await getDocs(postsRef);
                 
-                let targetDocId = null;
-                querySnapshot.forEach((document) => {
-                    // 如果輸入的文字剛好符合文件 ID，或是文章內容包含這段關鍵字/連結
-                    if (document.id === linkVal || document.data().content.includes(linkVal)) {
-                        targetDocId = document.id;
-                    }
-                });
+                let matchedCount = 0;
 
-                if (targetDocId) {
-                    // 直接更新該貼文的刪除申請狀態、原因與申請人資訊
-                    await updateDoc(doc(db, "posts", targetDocId), {
-                        deleteRequested: true,
-                        deleteReason: reasonVal,
-                        deleteUserEmail: idVal
-                    });
-                } else {
-                    // 如果找不到對應貼文，也可以額外存一筆獨立的申請紀錄（或存在通用集合）
-                    // 這裡以防萬一，先幫你寫入 posts 或者是讓版主能在後台看到
-                    alert('⚠️ 找不到相符的貼文編號或內容，但已將您的申請送出給版主！');
+                // 搜尋所有貼文，只要 ID 符合或是內容包含關鍵字，就標記刪除申請
+                for (const documentSnap of querySnapshot.docs) {
+                    const postData = documentSnap.data();
+                    const content = postData.content || "";
+
+                    if (documentSnap.id === keyword || content.includes(keyword)) {
+                        await updateDoc(doc(db, "posts", documentSnap.id), {
+                            deleteRequested: true,
+                            deleteReason: reasonVal,
+                            deleteUserEmail: idVal
+                        });
+                        matchedCount++;
+                    }
                 }
 
-                alert('✅ 刪文申請已成功送出！版主後台將會盡快處理。');
+                if (matchedCount > 0) {
+                    alert(`✅ 成功送出！已對應到 ${matchedCount} 筆貼文的刪除申請，版主後台將會顯示提醒。`);
+                } else {
+                    alert('⚠️ 找不到符合該關鍵字的貼文，請確認輸入的內容是否正確！');
+                    return;
+                }
                 
-                // 清空輸入框並導回首頁
                 document.getElementById('postLink').value = '';
                 document.getElementById('deleteReason').value = '';
                 document.getElementById('studentId').value = '';
                 window.location.href = 'index.html';
 
             } catch (error) {
-                alert('送出失敗，請稍後再試：' + error.message);
+                alert('送出失敗：' + error.message);
             }
         };
     </script>
-
 </body>
 </html>
