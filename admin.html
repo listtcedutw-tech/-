@@ -18,7 +18,7 @@
         }
         .header-bar {
             width: 100%;
-            max-width: 700px;
+            max-width: 750px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -34,6 +34,7 @@
             font-size: 13px;
             font-weight: 600;
         }
+        /* 登入卡片 */
         .login-card {
             background: white;
             color: #333;
@@ -58,11 +59,35 @@
             font-weight: bold;
             cursor: pointer;
         }
+        /* 後台主區域 */
         #adminContent {
             width: 100%;
-            max-width: 700px;
+            max-width: 750px;
             display: none;
         }
+        /* 分類標籤切換列 */
+        .tab-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .tab-btn.active {
+            background: white;
+            color: #4c4886;
+        }
+        /* 貼文卡片樣式 */
         .post-card {
             background: white;
             color: #333;
@@ -96,7 +121,8 @@
             color: white;
         }
         .btn-approve { background: #28a745; }
-        .btn-reject { background: #dc3545; }
+        .btn-reject { background: #ffc107; color: #333; } /* 下架移至欄位 */
+        .btn-delete { background: #dc3545; } /* 永久刪除 */
     </style>
 </head>
 <body>
@@ -106,20 +132,31 @@
         <a href="index.html" class="back-home">⬅ 返回首頁</a>
     </div>
 
+    <!-- 登入卡片 -->
     <div class="login-card" id="loginBox">
         <h2>管理員驗證</h2>
         <p>後台已改由版主 Google 帳號嚴格把關。</p>
         <button class="google-btn" onclick="loginAdmin()">🔐 使用 Google 帳號登入驗證</button>
     </div>
 
+    <!-- 後台內容區塊 -->
     <div id="adminContent">
+        <!-- 分類切換按鈕 -->
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tabPending" onclick="switchTab('pending')">⏳ 審核中</button>
+            <button class="tab-btn" id="tabPublished" onclick="switchTab('published')">✅ 已發布</button>
+            <button class="tab-btn" id="tabRejected" onclick="switchTab('rejected')">📁 已下架欄位</button>
+        </div>
+
+        <!-- 貼文列表顯示區 -->
         <div id="postsList">載入中...</div>
     </div>
 
+    <!-- Firebase 邏輯 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, getRedirectResult } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAz3ZK24KVPlpkdA74pu1_-nVPYYprxXsc",
@@ -136,37 +173,41 @@
         const auth = getAuth(app);
 
         const ADMIN_EMAIL = "listtcedutw@gmail.com";
+        let currentTab = 'pending'; // 預設顯示審核中
+        let allPostsData = [];
 
-        // 改用彈出視窗登入，並把可能發生的錯誤直接跳窗顯示
         window.loginAdmin = async function() {
             const provider = new GoogleAuthProvider();
             try {
-                const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                checkUser(user);
+                await signInWithPopup(auth, provider);
             } catch (error) {
-                alert("登入失敗錯誤碼: " + error.code + "\n原因: " + error.message);
+                alert("登入失敗: " + error.message);
             }
         };
 
-        // 自動檢查是否已經登入過
         auth.onAuthStateChanged((user) => {
             if (user) {
-                checkUser(user);
+                if (user.email === ADMIN_EMAIL) {
+                    document.getElementById('loginBox').style.display = 'none';
+                    document.getElementById('adminContent').style.display = 'block';
+                    loadAdminPosts();
+                } else {
+                    alert("權限不足，此帳號非管理員：" + user.email);
+                }
             }
         });
 
-        function checkUser(user) {
-            if (user.email === ADMIN_EMAIL) {
-                document.getElementById('loginBox').style.display = 'none';
-                document.getElementById('adminContent').style.display = 'block';
-                loadAdminPosts();
-            } else {
-                alert("權限不足，此帳號非管理員：" + user.email);
-                signOut(auth);
-            }
-        }
+        // 切換分頁
+        window.switchTab = function(tabName) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if(tabName === 'pending') document.getElementById('tabPending').classList.add('active');
+            if(tabName === 'published') document.getElementById('tabPublished').classList.add('active');
+            if(tabName === 'rejected') document.getElementById('tabRejected').classList.add('active');
+            renderPosts();
+        };
 
+        // 載入所有貼文資料
         async function loadAdminPosts() {
             const container = document.getElementById('postsList');
             container.innerHTML = '載入中...';
@@ -175,56 +216,95 @@
                 const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
 
-                if (querySnapshot.empty) {
-                    container.innerHTML = '<div class="post-card">目前沒有任何貼文。</div>';
-                    return;
-                }
-
-                let html = '';
+                allPostsData = [];
                 querySnapshot.forEach((documentSnap) => {
-                    const post = documentSnap.data();
-                    const postId = documentSnap.id;
-                    const email = post.userEmail || '未記錄';
-                    const code = post.postCode || '無';
-                    const time = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : '剛剛';
-                    const isDeleteRequested = post.deleteRequested ? '<span style="color:red; font-weight:bold;">[🚨 有人申請刪除]</span>' : '';
-
-                    html += `
-                        <div class="post-card">
-                            <div class="post-info">
-                                <span>發文者: ${email} | 刪文編號: <b>${code}</b> ${isDeleteRequested}</span>
-                                <span>${time}</span>
-                            </div>
-                            <div class="post-content">${post.content}</div>
-                            <div class="action-btns">
-                                <button class="btn-approve" onclick="updatePostStatus('${postId}', 'published')">通過/發布</button>
-                                <button class="btn-reject" onclick="deletePost('${postId}')">直接刪除</button>
-                            </div>
-                        </div>
-                    `;
+                    allPostsData.push({
+                        id: documentSnap.id,
+                        ...documentSnap.data()
+                    });
                 });
-                container.innerHTML = html;
+
+                renderPosts();
             } catch (error) {
-                alert("讀取貼文失敗: " + error.message);
                 container.innerHTML = '<div class="post-card">載入失敗：' + error.message + '</div>';
             }
         }
 
-        window.updatePostStatus = async function(postId, status) {
+        // 根據目前分頁過濾並渲染貼文
+        function renderPosts() {
+            const container = document.getElementById('postsList');
+            
+            // 過濾貼文狀態 (如果欄位不存在，預設視為 'pending')
+            const filtered = allPostsData.filter(post => {
+                const status = post.status || 'pending';
+                return status === currentTab;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="post-card" style="text-align:center; color:#666;">此分類目前沒有貼文。</div>`;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach((post) => {
+                const postId = post.id;
+                const email = post.userEmail || '未記錄';
+                const code = post.postCode || '無';
+                const time = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : '剛剛';
+                const isDeleteRequested = post.deleteRequested ? '<span style="color:red; font-weight:bold;">[🚨 有人申請刪除]</span>' : '';
+
+                let actionButtons = '';
+                if (currentTab === 'pending') {
+                    actionButtons = `
+                        <button class="btn-approve" onclick="updateStatus('${postId}', 'published')">✅ 通過/發布</button>
+                        <button class="btn-reject" onclick="updateStatus('${postId}', 'rejected')">📁 移至下架區</button>
+                    `;
+                } else if (currentTab === 'published') {
+                    actionButtons = `
+                        <button class="btn-reject" onclick="updateStatus('${postId}', 'rejected')">📁 移至下架區</button>
+                        <button class="btn-delete" onclick="permanentDelete('${postId}')">🗑️ 永久刪除</button>
+                    `;
+                } else if (currentTab === 'rejected') {
+                    actionButtons = `
+                        <button class="btn-approve" onclick="updateStatus('${postId}', 'pending')">⏳ 移回審核中</button>
+                        <button class="btn-delete" onclick="permanentDelete('${postId}')">🗑️ 永久刪除</button>
+                    `;
+                }
+
+                html += `
+                    <div class="post-card">
+                        <div class="post-info">
+                            <span>發文者: ${email} | 編號: <b>${code}</b> ${isDeleteRequested}</span>
+                            <span>${time}</span>
+                        </div>
+                        <div class="post-content">${post.content}</div>
+                        ${post.deleteRequested ? `<p style="color: #dc3545; font-size: 13px; margin-bottom: 10px;"><b>刪除原因:</b> ${post.deleteReason || '無'}</p>` : ''}
+                        <div class="action-btns">
+                            ${actionButtons}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // 改變狀態（例如：發布、移至下架區、退回審核）
+        window.updateStatus = async function(postId, newStatus) {
             try {
-                await updateDoc(doc(db, "posts", postId), { status: status, deleteRequested: false });
+                await updateDoc(doc(db, "posts", postId), { status: newStatus, deleteRequested: false });
                 alert('✅ 狀態已更新！');
-                loadAdminPosts();
+                loadAdminPosts(); // 重新載入資料
             } catch (error) {
                 alert('操作失敗：' + error.message);
             }
         };
 
-        window.deletePost = async function(postId) {
-            if (confirm('確定要永久刪除這則貼文嗎？')) {
+        // 永久刪除
+        window.permanentDelete = async function(postId) {
+            if (confirm('確定要將這則貼文永久刪除嗎？此動作無法復原！')) {
                 try {
                     await deleteDoc(doc(db, "posts", postId));
-                    alert('🗑️ 貼文已刪除！');
+                    alert('🗑️ 貼文已永久刪除！');
                     loadAdminPosts();
                 } catch (error) {
                     alert('刪除失敗：' + error.message);
