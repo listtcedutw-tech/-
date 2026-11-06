@@ -2,151 +2,22 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>版主審核管理後台 - 匿名東工</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #4c4886;
-            color: white;
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .header-bar {
-            width: 100%;
-            max-width: 700px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .header-bar h1 {
-            font-size: 18px;
-        }
-        .back-home {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            padding: 6px 14px;
-            border-radius: 20px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 600;
-            transition: background 0.2s;
-        }
-        .back-home:hover {
-            background: rgba(255,255,255,0.35);
-        }
-        .login-card {
-            background: white;
-            color: #333;
-            padding: 30px;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            margin-top: 50px;
-        }
-        .login-card h2 {
-            color: #4c4886;
-            margin-bottom: 10px;
-        }
-        .login-card p {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 20px;
-        }
-        .google-btn {
-            background: #4285F4;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .google-btn:hover {
-            background: #357ae8;
-        }
-        #adminContent {
-            width: 100%;
-            max-width: 700px;
-            display: none;
-        }
-        .post-card {
-            background: white;
-            color: #333;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .post-info {
-            font-size: 12px;
-            color: #777;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .post-content {
-            font-size: 15px;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            word-break: break-all;
-        }
-        .action-btns {
-            display: flex;
-            gap: 10px;
-        }
-        .action-btns button {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            color: white;
-        }
-        .btn-approve { background: #28a745; }
-        .btn-reject { background: #dc3545; }
-    </style>
+    <title>管理後台</title>
 </head>
 <body>
-
-    <div class="header-bar">
-        <h1>🛡️ 版主審核管理後台</h1>
-        <a href="index.html" class="back-home">⬅ 返回首頁</a>
+    <h2>版主管理後台</h2>
+    <div id="loginBox">
+        <button onclick="loginAdmin()">使用 Google 帳號登入</button>
+    </div>
+    <div id="adminContent" style="display:none;">
+        <p>登入成功！</p>
+        <div id="postsList"></div>
     </div>
 
-    <!-- 登入驗證卡片 -->
-    <div class="login-card" id="loginBox">
-        <h2>管理員驗證</h2>
-        <p>為了確保安全性，後台已廢除密碼登入，改由版主 Google 帳號嚴格把關。</p>
-        <button class="google-btn" onclick="loginAdmin()">🔐 使用 Google 帳號登入驗證</button>
-    </div>
-
-    <!-- 後台內容區塊 -->
-    <div id="adminContent">
-        <div id="postsList">載入中...</div>
-    </div>
-
-    <!-- Firebase 邏輯 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAz3ZK24KVPlpkdA74pu1_-nVPYYprxXsc",
@@ -162,7 +33,7 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // 🛑 請把下方引號內改成你自己的真實 Google / 學校信箱！
+        // 🛑 請把這裡換成你的真實信箱
         const ADMIN_EMAIL = "你的信箱@tsvs.tc.edu.tw";
 
         window.loginAdmin = function() {
@@ -170,87 +41,22 @@
             signInWithRedirect(auth, provider);
         };
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                if (user.email === ADMIN_EMAIL) {
-                    showAdminPanel();
-                } else {
-                    alert(`⚠️ 權限不足！此 Google 帳號 (${user.email}) 不是管理員。`);
-                    signOut(auth);
-                }
+        getRedirectResult(auth).then((result) => {
+            if (result && result.user) {
+                checkUser(result.user);
             }
+        }).catch((error) => {
+            alert(error.message);
         });
 
-        function showAdminPanel() {
-            document.getElementById('loginBox').style.display = 'none';
-            document.getElementById('adminContent').style.display = 'block';
-            loadAdminPosts();
-        }
-
-        async function loadAdminPosts() {
-            const container = document.getElementById('postsList');
-            container.innerHTML = '載入中...';
-
-            try {
-                const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                    container.innerHTML = '目前沒有任何貼文。';
-                    return;
-                }
-
-                let html = '';
-                querySnapshot.forEach((documentSnap) => {
-                    const post = documentSnap.data();
-                    const postId = documentSnap.id;
-                    const email = post.userEmail || '未記錄';
-                    const code = post.postCode || '無';
-                    const time = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : '剛剛';
-                    const isDeleteRequested = post.deleteRequested ? '<span style="color:red; font-weight:bold;">[🚨 有人申請刪除]</span>' : '';
-
-                    html += `
-                        <div class="post-card">
-                            <div class="post-info">
-                                <span>發文者: ${email} | 刪文編號: <b>${code}</b> ${isDeleteRequested}</span>
-                                <span>${time}</span>
-                            </div>
-                            <div class="post-content">${post.content}</div>
-                            ${post.deleteRequested ? `<p style="color: #dc3545; font-size: 13px; margin-bottom: 10px;"><b>刪除原因:</b> ${post.deleteReason || '無'}</p>` : ''}
-                            <div class="action-btns">
-                                <button class="btn-approve" onclick="updatePostStatus('${postId}', 'published')">通過/發布</button>
-                                <button class="btn-reject" onclick="deletePost('${postId}')">直接刪除</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            } catch (error) {
-                container.innerHTML = '載入失敗：' + error.message;
+        function checkUser(user) {
+            if (user.email === ADMIN_EMAIL) {
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+            } else {
+                alert("權限不足：" + user.email);
             }
         }
-
-        window.updatePostStatus = async function(postId, status) {
-            try {
-                await updateDoc(doc(db, "posts", postId), { status: status, deleteRequested: false });
-                alert('✅ 狀態已更新！');
-                loadAdminPosts();
-            } catch (error) {
-                alert('操作失敗：' + error.message);
-            }
-        };
-
-        window.deletePost = async function(postId) {
-            if (confirm('確定要刪除這則貼文嗎？')) {
-                try {
-                    await deleteDoc(doc(db, "posts", postId));
-                    alert('🗑️ 貼文已刪除！');
-                    loadAdminPosts();
-                } catch (error) {
-                    alert('刪除失敗：' + error.message);
-                }
-            }
-        };
     </script>
 </body>
 </html>
