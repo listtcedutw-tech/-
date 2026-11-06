@@ -119,7 +119,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAz3ZK24KVPlpkdA74pu1_-nVPYYprxXsc",
@@ -135,22 +135,21 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // 已設定為你的管理員信箱
         const ADMIN_EMAIL = "listtcedutw@gmail.com";
 
-        window.loginAdmin = function() {
+        // 改用彈出視窗登入，並把可能發生的錯誤直接跳窗顯示
+        window.loginAdmin = async function() {
             const provider = new GoogleAuthProvider();
-            signInWithRedirect(auth, provider);
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                checkUser(user);
+            } catch (error) {
+                alert("登入失敗錯誤碼: " + error.code + "\n原因: " + error.message);
+            }
         };
 
-        getRedirectResult(auth).then((result) => {
-            if (result && result.user) {
-                checkUser(result.user);
-            }
-        }).catch((error) => {
-            alert("登入導向錯誤: " + error.message);
-        });
-
+        // 自動檢查是否已經登入過
         auth.onAuthStateChanged((user) => {
             if (user) {
                 checkUser(user);
@@ -164,6 +163,7 @@
                 loadAdminPosts();
             } else {
                 alert("權限不足，此帳號非管理員：" + user.email);
+                signOut(auth);
             }
         }
 
@@ -172,7 +172,6 @@
             container.innerHTML = '載入中...';
 
             try {
-                // 如果這裡報錯，會直接跳出視窗告訴我們原因
                 const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
 
