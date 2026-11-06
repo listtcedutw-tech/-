@@ -108,7 +108,7 @@
 
     <div class="login-card" id="loginBox">
         <h2>管理員驗證</h2>
-        <p>後台已改由版主 Google 帳號嚴格把關。</p>
+        <p></p>
         <button class="google-btn" onclick="loginAdmin()">🔐 使用 Google 帳號登入驗證</button>
     </div>
 
@@ -136,7 +136,7 @@
         const auth = getAuth(app);
 
         // 🛑 請把這裡換成你的真實信箱
-        const ADMIN_EMAIL = "你的信箱@tsvs.tc.edu.tw";
+        const ADMIN_EMAIL = "listtcedutw@gmail.com";
 
         window.loginAdmin = function() {
             const provider = new GoogleAuthProvider();
