@@ -71,6 +71,32 @@
             margin-bottom: 15px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
+        .post-info {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .post-content {
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+        .action-btns { display: flex; gap: 10px; }
+        .action-btns button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+        }
+        .btn-approve { background: #28a745; }
+        .btn-reject { background: #dc3545; }
     </style>
 </head>
 <body>
@@ -92,7 +118,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
         import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -110,7 +136,7 @@
         const auth = getAuth(app);
 
         // 🛑 請把這裡換成你的真實信箱
-        const ADMIN_EMAIL = "listtcedutw@gmail.com";
+        const ADMIN_EMAIL = "你的信箱@tsvs.tc.edu.tw";
 
         window.loginAdmin = function() {
             const provider = new GoogleAuthProvider();
@@ -125,15 +151,87 @@
             alert(error.message);
         });
 
+        // 檢查當前登入狀態
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                checkUser(user);
+            }
+        });
+
         function checkUser(user) {
             if (user.email === ADMIN_EMAIL) {
                 document.getElementById('loginBox').style.display = 'none';
                 document.getElementById('adminContent').style.display = 'block';
-                document.getElementById('postsList').innerHTML = '登入成功！';
+                loadAdminPosts();
             } else {
-                alert("權限不足：" + user.email);
+                alert("權限不足，此帳號非管理員：" + user.email);
             }
         }
+
+        // 載入所有貼文
+        async function loadAdminPosts() {
+            const container = document.getElementById('postsList');
+            container.innerHTML = '載入中...';
+
+            try {
+                const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    container.innerHTML = '<div class="post-card">目前沒有任何貼文。</div>';
+                    return;
+                }
+
+                let html = '';
+                querySnapshot.forEach((documentSnap) => {
+                    const post = documentSnap.data();
+                    const postId = documentSnap.id;
+                    const email = post.userEmail || '未記錄';
+                    const code = post.postCode || '無';
+                    const time = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : '剛剛';
+                    const isDeleteRequested = post.deleteRequested ? '<span style="color:red; font-weight:bold;">[🚨 有人申請刪除]</span>' : '';
+
+                    html += `
+                        <div class="post-card">
+                            <div class="post-info">
+                                <span>發文者: ${email} | 刪文編號: <b>${code}</b> ${isDeleteRequested}</span>
+                                <span>${time}</span>
+                            </div>
+                            <div class="post-content">${post.content}</div>
+                            <div class="action-btns">
+                                <button class="btn-approve" onclick="updatePostStatus('${postId}', 'published')">通過/發布</button>
+                                <button class="btn-reject" onclick="deletePost('${postId}')">直接刪除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = '<div class="post-card">載入失敗：' + error.message + '</div>';
+            }
+        }
+
+        window.updatePostStatus = async function(postId, status) {
+            try {
+                await updateDoc(doc(db, "posts", postId), { status: status, deleteRequested: false });
+                alert('✅ 狀態已更新！');
+                loadAdminPosts();
+            } catch (error) {
+                alert('操作失敗：' + error.message);
+            }
+        };
+
+        window.deletePost = async function(postId) {
+            if (confirm('確定要永久刪除這則貼文嗎？')) {
+                try {
+                    await deleteDoc(doc(db, "posts", postId));
+                    alert('🗑️ 貼文已刪除！');
+                    loadAdminPosts();
+                } catch (error) {
+                    alert('刪除失敗：' + error.message);
+                }
+            }
+        };
     </script>
 </body>
 </html>
