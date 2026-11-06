@@ -244,6 +244,7 @@
                 myPostsData = [];
                 querySnapshot.forEach((document) => {
                     const data = document.data();
+                    // 比對使用者的 Email
                     if (data.userEmail === email || data.deleteUserEmail === email) {
                         myPostsData.push({ id: document.id, ...data });
                     }
@@ -260,7 +261,7 @@
             const container = document.getElementById('postsContainer');
 
             let filtered = myPostsData.filter(post => {
-                const status = post.status || (post.published ? 'published' : 'pending');
+                const status = post.status || 'pending';
 
                 if (currentFilter === 'pending') return status === 'pending';
                 if (currentFilter === 'published') return status === 'published';
@@ -275,13 +276,12 @@
 
             let html = '';
             filtered.forEach(post => {
-                // 修正時間解析：完美支援 Firestore 的 seconds 格式
                 let timeStr = '時間未知';
                 if (post.createdAt && post.createdAt.seconds) {
                     timeStr = new Date(post.createdAt.seconds * 1000).toLocaleString();
                 }
 
-                const status = post.status || (post.published ? 'published' : 'pending');
+                const status = post.status || 'pending';
 
                 let badgeHtml = '';
                 if (status === 'rejected' || post.deleteRequested === true) {
@@ -312,7 +312,7 @@
                 signOut(auth).then(() => {
                     localStorage.removeItem('google_user');
                     window.location.href = 'index.html';
-                }).catch((error) => {
+                }).catch(() => {
                     localStorage.removeItem('google_user');
                     window.location.href = 'index.html';
                 });
