@@ -108,7 +108,7 @@
 
     <div class="login-card" id="loginBox">
         <h2>管理員驗證</h2>
-        <p></p>
+        <p>後台已改由版主 Google 帳號嚴格把關。</p>
         <button class="google-btn" onclick="loginAdmin()">🔐 使用 Google 帳號登入驗證</button>
     </div>
 
@@ -135,7 +135,7 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // 🛑 請把這裡換成你的真實信箱
+        // 已設定為你的管理員信箱
         const ADMIN_EMAIL = "listtcedutw@gmail.com";
 
         window.loginAdmin = function() {
@@ -148,10 +148,9 @@
                 checkUser(result.user);
             }
         }).catch((error) => {
-            alert(error.message);
+            alert("登入導向錯誤: " + error.message);
         });
 
-        // 檢查當前登入狀態
         auth.onAuthStateChanged((user) => {
             if (user) {
                 checkUser(user);
@@ -168,12 +167,12 @@
             }
         }
 
-        // 載入所有貼文
         async function loadAdminPosts() {
             const container = document.getElementById('postsList');
             container.innerHTML = '載入中...';
 
             try {
+                // 如果這裡報錯，會直接跳出視窗告訴我們原因
                 const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
 
@@ -207,6 +206,7 @@
                 });
                 container.innerHTML = html;
             } catch (error) {
+                alert("讀取貼文失敗: " + error.message);
                 container.innerHTML = '<div class="post-card">載入失敗：' + error.message + '</div>';
             }
         }
