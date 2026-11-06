@@ -47,7 +47,7 @@
             max-width: 600px;
             margin: 0 auto;
         }
-        /* 分類導覽按鈕區塊（與首頁選單風格一致） */
+        /* 分類導覽按鈕區塊 */
         .profile-menu {
             display: flex;
             flex-direction: column;
@@ -155,7 +155,7 @@
     </div>
 
     <div class="container">
-        <!-- 功能選單按鈕（白色卡片風格） -->
+        <!-- 功能選單按鈕 -->
         <div class="profile-menu">
             <button class="menu-btn active" onclick="switchSection('all', event)">
                 <span>📋 投稿紀錄</span>
@@ -218,7 +218,7 @@
                 const localUser = localStorage.getItem('google_user');
                 if (localUser) {
                     currentUserEmail = localUser;
-                    document.getElementById('postsContainer').innerHTML = '<div class="no-data">目前沒有抓取到線上貼文紀錄</div>';
+                    loadMyPosts(currentUserEmail);
                 } else {
                     alert('請先登入帳號！');
                     window.location.href = 'index.html';
@@ -244,7 +244,6 @@
                 myPostsData = [];
                 querySnapshot.forEach((document) => {
                     const data = document.data();
-                    // 比對使用者的 Email（支援 userEmail 或 deleteUserEmail）
                     if (data.userEmail === email || data.deleteUserEmail === email) {
                         myPostsData.push({ id: document.id, ...data });
                     }
@@ -261,8 +260,6 @@
             const container = document.getElementById('postsContainer');
 
             let filtered = myPostsData.filter(post => {
-                // 統一以 status 欄位判定 ('pending', 'published', 'rejected')
-                // 若舊資料沒有 status 欄位，則退回用 published 布林值判斷
                 const status = post.status || (post.published ? 'published' : 'pending');
 
                 if (currentFilter === 'pending') return status === 'pending';
@@ -278,7 +275,12 @@
 
             let html = '';
             filtered.forEach(post => {
-                const timeStr = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : '時間未知';
+                // 修正時間解析：完美支援 Firestore 的 seconds 格式
+                let timeStr = '時間未知';
+                if (post.createdAt && post.createdAt.seconds) {
+                    timeStr = new Date(post.createdAt.seconds * 1000).toLocaleString();
+                }
+
                 const status = post.status || (post.published ? 'published' : 'pending');
 
                 let badgeHtml = '';
