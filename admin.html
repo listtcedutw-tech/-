@@ -156,7 +156,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, getRedirectResult } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAz3ZK24KVPlpkdA74pu1_-nVPYYprxXsc",
@@ -234,7 +234,7 @@
         function renderPosts() {
             const container = document.getElementById('postsList');
             
-            // 過濾貼文狀態 (如果欄位不存在，預設視為 'pending')
+            // 過濾貼文狀態 (如果資料庫裡沒有 status 欄位，預設視為 'pending')
             const filtered = allPostsData.filter(post => {
                 const status = post.status || 'pending';
                 return status === currentTab;
@@ -288,12 +288,12 @@
             container.innerHTML = html;
         }
 
-        // 改變狀態（例如：發布、移至下架區、退回審核）
+        // 改變貼文狀態（發布 / 移至下架區 / 移回審核）
         window.updateStatus = async function(postId, newStatus) {
             try {
                 await updateDoc(doc(db, "posts", postId), { status: newStatus, deleteRequested: false });
                 alert('✅ 狀態已更新！');
-                loadAdminPosts(); // 重新載入資料
+                loadAdminPosts();
             } catch (error) {
                 alert('操作失敗：' + error.message);
             }
